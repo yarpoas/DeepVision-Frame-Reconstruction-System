@@ -21,9 +21,18 @@ This system currently uses classical computer vision and image processing method
 
 - HSV color analysis for frame comparison
 - Optical flow for motion estimation
-- Interpolation-based reconstruction for missing frames
+- Hybrid interpolation for reconstructing missing frames (combines fast remapping with robust interpolation)
 
 No deep learning models are used in this version, but the architecture is designed to support future integration with neural-based approaches.
+
+## Output Flexibility
+
+The system supports two modes of output video generation:
+
+- **OpenCV-based** (fast, efficient for standard formats like `.mp4`)
+- **ImageIO-based** (flexible, supports formats like `.gif`, `.webm`, etc.)
+
+You can choose the backend by setting a flag in the code, depending on your platform or output needs.
 
 ## Applications
 
@@ -52,11 +61,20 @@ project/
 ├── main.py                          # Entry point for executing the full pipeline
 ├── keyframe_extraction.py          # Detects keyframes using HSV differences
 ├── make_incomplete_video.py        # Drops every other frame
-├── optical_flow_interpolation.py   # Interpolates missing frames
+├── hybrid_optical_flow_interpolation.py   # Interpolates missing frames (fast + robust)
 ├── reconstruct_full_video.py       # Builds final output video
 ├── README.md                       # This documentation file
 └── output/                         # Folder to store results
 ```
+
+## Hybrid Optical Flow Interpolation
+
+The file `hybrid_optical_flow_interpolation.py` implements an advanced interpolation method that combines:
+
+- Fast warping using `cv2.remap`
+- Edge-correction using `RegularGridInterpolator` from SciPy
+
+This hybrid approach ensures both speed and accuracy, particularly in edge cases or at motion boundaries.
 
 ## Future Plans
 
@@ -94,6 +112,5 @@ pip install -r requirements.txt
 
 Shady Nikooei  
 Final Year B.Sc. Student in Computer Engineering
-
 
 This repository will continue to evolve with future integration of deep learning techniques for advanced video restoration and understanding.
