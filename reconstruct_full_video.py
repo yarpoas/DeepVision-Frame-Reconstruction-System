@@ -1,7 +1,7 @@
 # shady nikooei
 
 import cv2
-from optical_flow_interpolation import hybrid_optical_flow_interpolation
+from hybrid_optical_flow_interpolation import hybrid_optical_flow_interpolation
 
 def reconstruct_video(input_video_path: str, output_video_path: str = "complete_video.mp4"):
     """
