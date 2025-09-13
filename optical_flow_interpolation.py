@@ -1,26 +1,29 @@
+# shady nikooei
+
 import cv2
 import numpy as np
 from scipy.interpolate import RegularGridInterpolator
 
-def interpolate_frame_optical_flow(frameA, frameC):
+def hybrid_optical_flow_interpolation(frame_a, frame_c, fix_border=True):
     """
-    Interpolates an intermediate frame between frameA and frameC using optical flow.
-    Based on motion compensation and pixel warping.
-    
-    Parameters:
-        frameA (np.ndarray): First input frame (RGB).
-        frameC (np.ndarray): Second input frame (RGB).
-    
-    Returns:
-        np.ndarray: Interpolated frame (RGB, uint8).
-    """
-    # Convert to grayscale
-    grayA = cv2.cvtColor(frameA, cv2.COLOR_RGB2GRAY)
-    grayC = cv2.cvtColor(frameC, cv2.COLOR_RGB2GRAY)
+    Interpolates a frame between two input frames using optical flow (Farneback).
+    Uses fast remap for most of the image, and switches to RegularGridInterpolator only
+    where remap gives unreliable results (e.g., near borders or undefined pixels).
 
-    # Calculate optical flow from A to C using Farneback method
+    Parameters:
+        frame_a (np.ndarray): First RGB frame (uint8).
+        frame_c (np.ndarray): Second RGB frame (uint8).
+        fix_border (bool): Whether to apply RegularGridInterpolator on remap edge artifacts.
+
+    Returns:
+        interpolated (np.ndarray): Interpolated frame (uint8).
+    """
+
+    gray_a = cv2.cvtColor(frame_a, cv2.COLOR_RGB2GRAY)
+    gray_c = cv2.cvtColor(frame_c, cv2.COLOR_RGB2GRAY)
+
     flow = cv2.calcOpticalFlowFarneback(
-        grayA, grayC,
+        gray_a, gray_c,
         None,
         pyr_scale=0.5,
         levels=3,
@@ -31,38 +34,53 @@ def interpolate_frame_optical_flow(frameA, frameC):
         flags=0
     )
 
-    h, w = grayA.shape
+    h, w = gray_a.shape
     X, Y = np.meshgrid(np.arange(w), np.arange(h))
 
     half_vx = flow[..., 0] / 2
     half_vy = flow[..., 1] / 2
 
-    # Warp both frames
-    warpedA = np.zeros_like(frameA, dtype=np.float32)
-    warpedC = np.zeros_like(frameC, dtype=np.float32)
+    warped_a = np.zeros_like(frame_a, dtype=np.float32)
+    warped_c = np.zeros_like(frame_c, dtype=np.float32)
 
     for k in range(3):
-        channelA = frameA[:, :, k].astype(np.float32)
-        channelC = frameC[:, :, k].astype(np.float32)
+        channel_a = frame_a[:, :, k].astype(np.float32)
+        channel_c = frame_c[:, :, k].astype(np.float32)
 
-        interp_A = RegularGridInterpolator(
-            (np.arange(h), np.arange(w)),
-            channelA,
-            bounds_error=False,
-            fill_value=0
-        )
-        interp_C = RegularGridInterpolator(
-            (np.arange(h), np.arange(w)),
-            channelC,
-            bounds_error=False,
-            fill_value=0
-        )
+        # Fast warping with cv2.remap
+        map_ax = (X + half_vx).astype(np.float32)
+        map_ay = (Y + half_vy).astype(np.float32)
+        map_cx = (X - half_vx).astype(np.float32)
+        map_cy = (Y - half_vy).astype(np.float32)
 
-        coordsA = np.stack([Y + half_vy, X + half_vx], axis=-1)
-        coordsC = np.stack([Y - half_vy, X - half_vx], axis=-1)
+        warped_a[:, :, k] = cv2.remap(channel_a, map_ax, map_ay, interpolation=cv2.INTER_LINEAR, borderMode=cv2.BORDER_REFLECT)
+        warped_c[:, :, k] = cv2.remap(channel_c, map_cx, map_cy, interpolation=cv2.INTER_LINEAR, borderMode=cv2.BORDER_REFLECT)
 
-        warpedA[:, :, k] = interp_A(coordsA)
-        warpedC[:, :, k] = interp_C(coordsC)
+        if fix_border:
+            # Detect remap edge artifacts (near-zero or constant flat values)
+            mask_a = (warped_a[:, :, k] < 1)
+            mask_c = (warped_c[:, :, k] < 1)
 
-    blended = 0.5 * warpedA + 0.5 * warpedC
+            if np.any(mask_a):
+                interpolator_a = RegularGridInterpolator(
+                    (np.arange(h), np.arange(w)),
+                    channel_a,
+                    bounds_error=False,
+                    fill_value=0
+                )
+                coords_a = np.stack([map_ay[mask_a], map_ax[mask_a]], axis=-1)
+                warped_a[:, :, k][mask_a] = interpolator_a(coords_a)
+
+            if np.any(mask_c):
+                interpolator_c = RegularGridInterpolator(
+                    (np.arange(h), np.arange(w)),
+                    channel_c,
+                    bounds_error=False,
+                    fill_value=0
+                )
+                coords_c = np.stack([map_cy[mask_c], map_cx[mask_c]], axis=-1)
+                warped_c[:, :, k][mask_c] = interpolator_c(coords_c)
+
+    # Blend the warped frames
+    blended = 0.5 * warped_a + 0.5 * warped_c
     return np.clip(blended, 0, 255).astype(np.uint8)

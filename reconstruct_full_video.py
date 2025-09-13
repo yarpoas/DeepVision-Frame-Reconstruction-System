@@ -1,47 +1,55 @@
+# shady nikooei
+
 import cv2
-import imageio
-from optical_flow_interpolation import interpolate_frame_optical_flow
+from optical_flow_interpolation import hybrid_optical_flow_interpolation
 
-def reconstruct_video_with_interpolation(input_path, output_path='complete_video.mp4', output_fps=None):
+def reconstruct_video(input_video_path: str, output_video_path: str = "complete_video.mp4"):
     """
-    Reads an incomplete video, interpolates missing frames, and reconstructs a complete video.
-    
+    Reconstructs a video by interpolating intermediate frames using optical flow.
+    Assumes the input video is missing every other frame.
+
     Parameters:
-        input_path (str): Path to the input incomplete video.
-        output_path (str): Path to the output complete video.
-        output_fps (float or None): Frame rate for the output video. If None, uses 1.5x input fps.
+        input_video_path (str): Path to the incomplete video file.
+        output_video_path (str): Path to save the reconstructed video.
     """
-    cap = cv2.VideoCapture(input_path)
+
+    # Open the input video
+    cap = cv2.VideoCapture(input_video_path)
     if not cap.isOpened():
-        raise IOError("Cannot open video: " + input_path)
+        print("Failed to open input video.")
+        return
 
-    original_fps = cap.get(cv2.CAP_PROP_FPS)
-    out_fps = output_fps if output_fps else original_fps * 1.5
-    frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    frame_rate = cap.get(cv2.CAP_PROP_FPS)
+    width  = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
-    # Load all frames into memory
-    print("Reading frames into memory...")
     frames = []
-    for _ in range(frame_count):
+
+    print("Reading frames into memory...")
+    while True:
         ret, frame = cap.read()
         if not ret:
             break
-        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        frames.append(frame_rgb)
-
+        frames.append(frame)
     cap.release()
-    print("All frames loaded into memory.")
+    print(f"Loaded {len(frames)} frames.")
 
-    # Prepare writer
-    writer = imageio.get_writer(output_path, fps=out_fps)
-    print("Reconstructing video with interpolated frames...")
+    # Prepare output writer with higher framerate
+    out = cv2.VideoWriter(
+        output_video_path,
+        cv2.VideoWriter_fourcc(*'mp4v'),
+        frame_rate * 1.5,
+        (width, height)
+    )
 
+    print("Reconstructing full video with interpolated frames...")
     for i in range(len(frames) - 1):
-        writer.append_data(frames[i])
-        interpolated = interpolate_frame_optical_flow(frames[i], frames[i + 1])
-        writer.append_data(interpolated)
+        out.write(frames[i])
+        interpolated = hybrid_optical_flow_interpolation(frames[i], frames[i + 1])
+        out.write(interpolated)
 
-    writer.append_data(frames[-1])
-    writer.close()
+    # Write the last original frame
+    out.write(frames[-1])
+    out.release()
 
     print("Video reconstruction complete.")

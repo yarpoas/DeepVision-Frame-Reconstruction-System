@@ -1,82 +1,94 @@
+# shady nikooei
+
 import cv2
 import numpy as np
-import imageio
-import os
 
-def extract_keyframes(video_path, output_path='summary_video.mp4', frame_rate=5):
+def extract_keyframes(input_video_path: str, output_video_path: str = "final_summary_video_hsv.mp4", frame_rate: int = 5):
     """
-    Extracts keyframes from a video based on frame-to-frame difference in HSV space.
-    Uses a weighted moving average filter and a statistical threshold to select keyframes.
+    Extracts keyframes from a video based on frame-to-frame differences in HSV color space.
+    Applies a weighted moving average filter to smooth the difference signal,
+    then selects keyframes based on a statistical threshold and saves them into a new summary video.
     
     """
 
-    # Open video and initialize reader
-    cap = cv2.VideoCapture(video_path)
-    if not cap.isOpened():
-        raise IOError("Cannot open video: " + video_path)
-
+    # Read input video
+    cap = cv2.VideoCapture(input_video_path)
     frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    diff_vector = []
 
+    diff_vector = []
+    
     # Read the first frame and convert to HSV
     ret, prev_frame = cap.read()
     if not ret:
-        raise IOError("Cannot read first frame")
+        print("Failed to read the first frame.")
+        cap.release()
+        return
+
     prev_hsv = cv2.cvtColor(prev_frame, cv2.COLOR_BGR2HSV)
 
-    # Compute frame-to-frame difference vector
+    # Compute HSV difference between consecutive frames
     for _ in range(1, frame_count):
         ret, frame = cap.read()
         if not ret:
             break
-        hsv_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-        diff = hsv_frame.astype(float) - prev_hsv.astype(float)
-        diff_norm = np.sqrt(np.sum(diff**2))
-        diff_vector.append(diff_norm)
-        prev_hsv = hsv_frame
+        hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+        diff = np.sqrt(np.sum((hsv.astype("float32") - prev_hsv.astype("float32")) ** 2))
+        diff_vector.append(diff)
+        prev_hsv = hsv
 
-    cap.release()
-
-    # Apply weighted moving average filter
+    # Weighted moving average smoothing
     window_len = 11
     weights = [0.05, 0.05, 0.05, 0.1, 0.15, 0.2, 0.15, 0.1, 0.05, 0.05, 0.05]
     half = window_len // 2
-    smoothed = []
+    smoothed_diff = []
 
     for k in range(len(diff_vector)):
-        center_value = diff_vector[k] * weights[half]
+        center_val = diff_vector[k] * weights[half]
 
-        left_indices = range(max(0, k - half), k)
-        right_indices = range(k + 1, min(len(diff_vector), k + half + 1))
+        # Left window
+        num_left = min(k, half)
+        left_vals = diff_vector[k - num_left:k]
+        left_weights = weights[half - num_left:half]
+        part1 = np.dot(left_vals, left_weights) if left_vals else 0
 
-        part1 = [diff_vector[i] * weights[half - (k - i)] for i in left_indices]
-        part2 = [diff_vector[i] * weights[half + (i - k)] for i in right_indices]
+        # Right window
+        num_right = min(len(diff_vector) - k - 1, half)
+        right_vals = diff_vector[k + 1:k + 1 + num_right]
+        right_weights = weights[half + 1:half + 1 + num_right]
+        part2 = np.dot(right_vals, right_weights) if right_vals else 0
 
-        total_weight = sum(weights[half - (k - i)] for i in left_indices) + \
-                       weights[half] + \
-                       sum(weights[half + (i - k)] for i in right_indices)
+        total_weights = weights[half - num_left:half + 1 + num_right]
+        weight_sum = np.sum(total_weights)
 
-        mean_weighted = (sum(part1) + center_value + sum(part2)) / total_weight if total_weight > 0 else 0
-        smoothed.append(mean_weighted)
+        if weight_sum > 0:
+            weighted_avg = (part1 + center_val + part2) / weight_sum
+        else:
+            weighted_avg = 0
 
-    # Threshold to detect keyframes
-    smoothed = np.array(smoothed)
-    threshold = np.mean(smoothed) + 1.5 * np.std(smoothed)
-    key_indices = np.where(smoothed >= threshold)[0]
+        smoothed_diff.append(weighted_avg)
 
-    # Write selected keyframes to output video
-    cap = cv2.VideoCapture(video_path)
-    writer = imageio.get_writer(output_path, fps=frame_rate)
+    # Thresholding to select keyframes
+    smoothed_diff = np.array(smoothed_diff)
+    threshold = np.mean(smoothed_diff) + 1.5 * np.std(smoothed_diff)
+    keyframe_indices = np.where(smoothed_diff >= threshold)[0]
 
-    for idx in key_indices:
+    # Reopen video to read keyframes for saving
+    cap.release()
+    cap = cv2.VideoCapture(input_video_path)
+    
+    out = cv2.VideoWriter(
+        output_video_path,
+        cv2.VideoWriter_fourcc(*'mp4v'),
+        frame_rate,
+        (int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)))
+    )
+
+    for idx in keyframe_indices:
         cap.set(cv2.CAP_PROP_POS_FRAMES, idx)
         ret, frame = cap.read()
         if ret:
-            frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            writer.append_data(frame_rgb)
+            out.write(frame)
 
     cap.release()
-    writer.close()
-
-    print("Video creation complete.")
-    return key_indices.tolist()
+    out.release()
+    print("Video creation complete!")
